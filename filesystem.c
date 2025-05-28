@@ -1,261 +1,129 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "filesystem.h"
 
+#define MAX_SIZE 1024
 
-// 1.1. Функция для открытия или создания файла файловой системы
-FILE* открыть_или_создать_файл(const char* имя_файла) {
-    FILE* файл = fopen(имя_файла, "r+");
-    if (файл == NULL) {
-        файл = fopen(имя_файла, "w+");
+FILE* create_open_file(const char* filename) {
+    FILE* fp = fopen(filename, "a+");
+    if (fp == NULL) {
+        perror("Ошибка при открытии файла");
+        return NULL;
     }
-    return файл;
+    return fp;
 }
 
-// 1.2. Функция для просмотра содержимого файла внутри файловой системы
-char* просмотреть_файл(const char* имя_фс, const char* имя_файла) {
-    FILE* файл_фс = fopen(имя_фс, "r");
-    if (файл_фс == NULL) return NULL;
-
-    // Читаем всё содержимое файловой системы
-    fseek(файл_фс, 0, SEEK_END);
-    long размер = ftell(файл_фс);
-    fseek(файл_фс, 0, SEEK_SET);
+char* view_file(const char* filename) {
     
-    char* содержимое = malloc(размер + 1);
-    fread(содержимое, 1, размер, файл_фс);
-    содержимое[размер] = '\0';
-    fclose(файл_фс);
+    FILE* fs_file = fopen(filename, "r");
 
-    // Разбиваем по строкам
-    char* строка = strtok(содержимое, "\n");
-    int найдено = 0;
-    char* содержимое_файла = NULL;
+    char line[MAX_SIZE];
+    int found = 0;
+    char content[MAX_SIZE]; 
+    content[0] = '\0';
 
-    while (строка != NULL) {
-        if (!найдено && strcmp(строка, имя_файла) == 0) {
-            найдено = 1;
-        } else if (найдено) {
-            if (строка[0] == '/') {
-                break;
+    while (fgets(line, sizeof(line), fs_file)) {
+        // Удаляем символ новой строки
+        int i = 0;
+        while (line[i] != '\n' && line[i] != '\0') i++;
+        line[i] = '\0';
+
+        if (!found) {
+            int match = 1;
+            for (i = 0; filename[i] != '\0' && line[i] != '\0'; i++) {
+                if (filename[i] != line[i]) {
+                    match = 0;
+                    break;
+                }
             }
-            // Выделяем память под содержимое файла
-            if (содержимое_файла == NULL) {
-                содержимое_файла = malloc(strlen(строка) + 2);
-                strcpy(содержимое_файла, строка);
-                strcat(содержимое_файла, "\n");
-            } else {
-                содержимое_файла = realloc(содержимое_файла, strlen(содержимое_файла) + strlen(строка) + 2);
-                strcat(содержимое_файла, строка);
-                strcat(содержимое_файла, "\n");
-            }
-        }
-        строка = strtok(NULL, "\n");
-    }
-
-    free(содержимое);
-    return содержимое_файла;
-}
-
-// 1.3. Функция для удаления файла внутри файловой системы
-int удалить_файл(const char* имя_фс, const char* имя_файла) {
-    FILE* файл_фс = fopen(имя_фс, "r");
-    if (файл_фс == NULL) return 0;
-
-    // Читаем всё содержимое файловой системы
-    fseek(файл_фс, 0, SEEK_END);
-    long размер = ftell(файл_фс);
-    fseek(файл_фс, 0, SEEK_SET);
-    
-    char* содержимое = malloc(размер + 1);
-    fread(содержимое, 1, размер, файл_фс);
-    содержимое[размер] = '\0';
-    fclose(файл_фс);
-
-    // Разбиваем на строки
-    char** строки = NULL;
-    int кол_строк = 0;
-    char* строка = strtok(содержимое, "\n");
-    
-    while (строка != NULL) {
-        строки = realloc(строки, sizeof(char*) * (кол_строк + 1));
-        строки[кол_строк] = strdup(строка);
-        кол_строк++;
-        строка = strtok(NULL, "\n");
-    }
-
-    free(содержимое);
-
-    // Помечаем строки для сохранения/удаления
-    int* сохранить = malloc(sizeof(int) * кол_строк);
-    int режим_удаления = 0;
-    int изменения = 0;
-
-    for (int i = 0; i < кол_строк; i++) {
-        if (!режим_удаления && strcmp(строки[i], имя_файла) == 0) {
-            режим_удаления = 1;
-            сохранить[i] = 0;
-            изменения = 1;
-        } else if (режим_удаления) {
-            if (строки[i][0] == '/') {
-                режим_удаления = 0;
-                сохранить[i] = 1;
-            } else {
-                сохранить[i] = 0;
+            if (match && filename[i] == '\0' && line[i] == '\0') {
+                found = 1;
             }
         } else {
-            сохранить[i] = 1;
+            if (line[0] == '/') break;
+
+            if (content[0] != '\0') {
+                strcat(content, "\n");
+            }
+            strcat(content, line);
         }
     }
 
-    if (!изменения) {
-        free(сохранить);
-        for (int i = 0; i < кол_строк; i++) free(строки[i]);
-        free(строки);
-        return 0;
-    }
-
-    // Записываем обновлённое содержимое
-    файл_фс = fopen(имя_фс, "w");
-    if (файл_фс == NULL) {
-        free(сохранить);
-        for (int i = 0; i < кол_строк; i++) free(строки[i]);
-        free(строки);
-        return 0;
-    }
-
-    for (int i = 0; i < кол_строк; i++) {
-        if (сохранить[i]) {
-            fprintf(файл_фс, "%s\n", строки[i]);
-        }
-        free(строки[i]);
-    }
-
-    free(строки);
-    free(сохранить);
-    fclose(файл_фс);
-    return 1;
-} 
-// 1.4. Функция для создания нового файла в файловой системе
-int создать_новый_файл(const char* имя_фс, const char* имя_файла, const char* содержимое) {
-    FILE* файл_фс = fopen(имя_фс, "a+");
-    if (файл_фс == NULL) return 0;
-
-    // Добавляем разделитель, если файл не пустой
-    fseek(файл_фс, -1, SEEK_END);
-    char последний_символ = fgetc(файл_фс);
-    if (последний_символ != '\n' && последний_символ != EOF) {
-        fprintf(файл_фс, "\n");
-    }
-
-    // Записываем имя файла и его содержимое
-    fprintf(файл_фс, "%s\n", имя_файла);
-    fprintf(файл_фс, "%s\n", содержимое);
-    fprintf(файл_фс, "/\n"); // Добавляем разделитель
-    
-    fclose(файл_фс);
-    return 1;
+    return content;
 }
 
-// 1.5. Функция для изменения существующего файла
-int изменить_файл(const char* имя_фс, const char* имя_файла, const char* новое_содержимое) {
-    // Сначала читаем всю файловую систему
-    FILE* файл_фс = fopen(имя_фс, "r");
-    if (файл_фс == NULL) return 0;
-
-    fseek(файл_фс, 0, SEEK_END);
-    long размер = ftell(файл_фс);
-    fseek(файл_фс, 0, SEEK_SET);
+char* delete_file(const char* filename) {
+    if (remove(filename) == 0) return "ФАЙЛ УДАЛЕН";
     
-    char* старое_содержимое = malloc(размер + 1);
-    fread(старое_содержимое, 1, размер, файл_фс);
-    старое_содержимое[размер] = '\0';
-    fclose(файл_фс);
+    return "ОШИБКА";
+}
 
-    // Разбиваем на строки
-    char** строки = NULL;
-    int кол_строк = 0;
-    char* строка = strtok(старое_содержимое, "\n");
+char* add_file(const char* main_filename) {
+    char filename[1024];
+    printf("Введите название файла из ФС\n");
+    scanf("%s", filename);
     
-    while (строка != NULL) {
-        строки = realloc(строки, sizeof(char*) * (кол_строк + 1));
-        строки[кол_строк] = strdup(строка);
-        кол_строк++;
-        строка = strtok(NULL, "\n");
+    
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL) {
+        return "ERROR\n";
+    }
+    fclose(fp);
+    
+    fp = fopen(main_filename, "r");
+    if (fp != NULL) {
+        return "ERROR\n";
+    }
+    fclose(fp);
+    
+    FILE* fs_file = fopen(main_filename, "a+");
+    
+    char content[1024];
+    printf("Введите содержимое файла\n");
+    scanf("%s", content);
+    
+    fprintf(fs_file, "%s\n", filename);
+    fprintf(fs_file, "%s\n", content);
+    fprintf(fs_file, "/\n");
+    
+    return "GOOD";
+}
+
+void modify_file(const char* fs_filename) {
+    // Открываем файловую систему для чтения, чтобы проверить существует ли такой файл
+    FILE* fs_file = fopen(fs_filename, "r");
+    if (fs_file == NULL) {
+        printf("ERROR: Не удалось открыть файловую систему\n");
+        return;
+    }
+    fclose(fs_file);
+
+    // Временный файл
+    FILE* file = fopen(fs_filename, "w");
+    if (file == NULL) {
+        printf("ERROR: Не удалось создать временный файл\n");
+        fclose(file);
+        return;
     }
 
-    free(старое_содержимое);
+    // получаем новое содержимое
+    char new_content[1024];
+    printf("Введите новое содержимое для файла '%s':\n", filename);
+    scanf(" %1023[^\n]", new_content);
 
-    // Ищем файл для изменения
-    int режим_изменения = 0;
-    int файл_найден = 0;
-    int начало_файла = -1;
-    int конец_файла = -1;
+    char line[256];
+    int found = 0;
+    int copying = 1;
 
-    for (int i = 0; i < кол_строк; i++) {
-        if (!режим_изменения && strcmp(строки[i], имя_файла) == 0) {
-            режим_изменения = 1;
-            файл_найден = 1;
-            начало_файла = i;
-        } else if (режим_изменения && строки[i][0] == '/') {
-            конец_файла = i;
-            break;
+    // Обрабатко файловой системы
+    for (int i = 0; i <= MAX_SIZE; i++) {
+        if (text[i] == '\0') {
+            fprintf("\0", file); // закрываем слово
+        } else {
+            fprintf("%c", new_content[i], file);
         }
     }
 
-    if (!файл_найден) {
-        for (int i = 0; i < кол_строк; i++) free(строки[i]);
-        free(строки);
-        return 0;
-    }
-
-    // Создаём новый массив строк с изменённым содержимым
-    int новый_размер = кол_строк - (конец_файла - начало_файла - 1) + 1 + (int)(strlen(новое_содержимое) / 70);
-    char** новые_строки = malloc(sizeof(char*) * новый_размер);
-    
-    // Копируем строки до изменяемого файла
-    int новая_позиция = 0;
-    for (int i = 0; i <= начало_файла; i++) {
-        новые_строки[новая_позиция++] = strdup(строки[i]);
-    }
-
-    // Добавляем новое содержимое
-    char* контент = strdup(новое_содержимое);
-    char* часть = strtok(контент, "\n");
-    while (часть != NULL) {
-        новые_строки[новая_позиция++] = strdup(часть);
-        часть = strtok(NULL, "\n");
-    }
-    free(контент);
-
-    // Добавляем разделитель
-    новые_строки[новая_позиция++] = strdup("/");
-
-    // Копируем строки после изменяемого файла
-    for (int i = конец_файла + 1; i < кол_строк; i++) {
-        новые_строки[новая_позиция++] = strdup(строки[i]);
-    }
-
-    // Освобождаем старые строки
-    for (int i = 0; i < кол_строк; i++) free(строки[i]);
-    free(строки);
-
-    // Записываем обновлённое содержимое в файл
-    файл_фс = fopen(имя_фс, "w");
-    if (файл_фс == NULL) {
-        for (int i = 0; i < новая_позиция; i++) free(новые_строки[i]);
-        free(новые_строки);
-        return 0;
-    }
-
-    for (int i = 0; i < новая_позиция; i++) {
-        fprintf(файл_фс, "%s\n", новые_строки[i]);
-        free(новые_строки[i]);
-    }
-    free(новые_строки);
-    fclose(файл_фс);
-    
-    return 1;
-}
+    // Закрываем файл
+    fclose(file);
 }
