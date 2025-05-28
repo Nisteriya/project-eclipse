@@ -1,7 +1,7 @@
-# **Project Eclipse**
+# **Eclipse**
 
-
-## Операции с файлами в файловой системе
+##Создатели:
+0907-31 Аринин Андрей, Радьков Степан
 
 ## filesystem.h
 Заголовочный файл. Содержит объявлление функций: `-create_open_file` `-view_file` `-delete_file` `-add_file` `-modify_file.`    
