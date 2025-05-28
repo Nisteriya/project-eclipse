@@ -1,5 +1,5 @@
-Prostokvashino
-(2)
+                                                                        **#project eclipse
+
 
 Операции с файлами
 открыть_или_создать_файл
