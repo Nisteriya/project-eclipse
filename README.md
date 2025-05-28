@@ -1,5 +1,17 @@
 # **Eclipse**
 
+## Компиляция
+Для компиляции нужно ввести команду:
+```
+gcc main.c filesystem.c -o fs_program
+```
+
+## Библиотеки
+Что бы включить функции нужно написать
+```
+#include "filesystem.h
+```
+
 ## filesystem.h
 Заголовочный файл. Содержит объявлление функций: `-create_open_file` `-view_file` `-delete_file` `-add_file` `-modify_file.`    
 
