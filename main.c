@@ -1,90 +1,45 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "filesystem.h"
 
-#define MAX_INPUT 256
-#define MAX_PARAMS 5
-
-void обработать_команду(char* команда, char** параметры, int кол_параметров) {
-    if (strcmp(команда, "создать") == 0 && кол_параметров == 2) {
-        if (создать_новый_файл("фс.txt", параметры[0], параметры[1])) {
-            printf("Файл '%s' успешно создан\n", параметры[0]);
-        } else {
-            printf("Ошибка при создании файла\n");
-        }
-    }
-    else if (strcmp(команда, "удалить") == 0 && кол_параметров == 1) {
-        if (удалить_файл("фс.txt", параметры[0])) {
-            printf("Файл '%s' успешно удалён\n", параметры[0]);
-        } else {
-            printf("Ошибка при удалении файла\n");
-        }
-    }
-    else if (strcmp(команда, "изменить") == 0 && кол_параметров == 2) {
-        if (изменить_файл("фс.txt", параметры[0], параметры[1])) {
-            printf("Файл '%s' успешно изменён\n", параметры[0]);
-        } else {
-            printf("Ошибка при изменении файла\n");
-        }
-    }
-    else if (strcmp(команда, "просмотреть") == 0 && кол_параметров == 1) {
-        char* содержимое = просмотреть_файл("фс.txt", параметры[0]);
-        if (содержимое) {
-            printf("Содержимое файла '%s':\n%s\n", параметры[0], содержимое);
-            free(содержимое);
-        } else {
-            printf("Файл '%s' не найден\n", параметры[0]);
-        }
-    }
-    else if (strcmp(команда, "помощь") == 0) {
-        printf("Доступные команды:\n");
-        printf("создать <имя_файла> <содержимое>\n");
-        printf("удалить <имя_файла>\n");
-        printf("изменить <имя_файла> <новое_содержимое>\n");
-        printf("просмотреть <имя_файла>\n");
-        printf("выход - завершение программы\n");
-    }
-    else if (strcmp(команда, "выход") == 0) {
-        exit(0);
-    }
-    else {
-        printf("Неизвестная команда или неверные параметры. Введите 'помощь' для списка команд\n");
-    }
-}
-
-int main() {
-    char ввод[MAX_INPUT];
-    char* параметры[MAX_PARAMS];
-    
-    printf("Добро пожаловать в файловую систему!\n");
-    printf("Введите 'помощь' для списка команд\n");
-
+// Компиляция: gcc main.c filesystem.c -o fs_program
+int main()
+{
     while (1) {
-        printf("> ");
-        fgets(ввод, MAX_INPUT, stdin);
-        ввод[strcspn(ввод, "\n")] = '\0'; // Удаляем символ новой строки
-
-        // Разбиваем ввод на токены
-        char* токен = strtok(ввод, " ");
-        int кол_параметров = 0;
-        char* команда = NULL;
-
-        if (токен) {
-            команда = токен;
-            токен = strtok(NULL, " ");
-        }
-
-        while (токен && кол_параметров < MAX_PARAMS) {
-            параметры[кол_параметров++] = токен;
-            токен = strtok(NULL, " ");
-        }
-
-        if (команда) {
-            обработать_команду(команда, параметры, кол_параметров);
+        
+        int file_action;
+        printf("Ваше действие с файлом\n1 - Отркыть/Создать файл\n2 - Прочитать файл\n3 - Удаление файла\n4 -Добавить новый файла \n5 - Обновить файл\n0 -Выйти из программы\n");
+        scanf("%d", &file_action);
+    
+        if (file_action == 0) break;
+        
+        char filename[255];
+        printf("Input your file\n");
+        scanf("%s", filename);
+    
+        FILE* fp;
+        
+    
+        switch(file_action) {
+            case 1:
+                fp = create_open_file(filename);
+                break;
+            case 2:
+                fp = fopen(filename, "r");
+                printf("Результат:\n%s\n", view_file(filename));
+                break;
+            case 3:
+                printf("Результат: %s\n", delete_file(filename));
+                break;
+            case 4:
+                printf("Результат: %s\n", add_file(filename));
+                break;
+            case 5:
+                printf("Результат: %s\n", modify_file(filename)); 
+                break;
+            default:
+                printf("Ошибка такого действие еще нет");
         }
     }
 
-    return 0;
+    return 1;
 }
-
