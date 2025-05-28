@@ -9,7 +9,7 @@ gcc main.c filesystem.c -o fs_program
 ## Библиотеки
 Что бы включить функции нужно написать
 ```
-#include "filesystem.h
+#include "filesystem.h"
 ```
 
 ## filesystem.h
