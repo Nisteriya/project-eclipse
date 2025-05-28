@@ -1,4 +1,4 @@
-#**project eclipse**
+#project eclipse
 
 
 Операции с файлами
