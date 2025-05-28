@@ -27,7 +27,7 @@ gcc main.c filesystem.c -o fs_program
 
 ## Библиотеки
 Файловая система включает библиотеку
-`#include "filesystem.h"`
+`filesystem.h`
 
 ## Создатели:
 0907-31 Аринин Андрей, Радьков Степан
