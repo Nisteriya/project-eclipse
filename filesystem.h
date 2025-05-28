@@ -4,18 +4,18 @@
 #include <stdio.h>
 
 // Открывает или создает файл файловой системы
-FILE* открыть_или_создать_файл(const char* имя_файла);
+FILE* create_open_file(const char* filename);
 
 // Просматривает содержимое файла внутри ФС
-char* просмотреть_файл(const char* имя_фс, const char* имя_файла);
+char* view_file(const char* имя_фс, const char* filename);
 
 // Удаляет файл внутри ФС
-int удалить_файл(const char* имя_фс, const char* имя_файла);
+char* delete_file(const char* filename);
 
 // Создает новый файл в ФС
-int создать_новый_файл(const char* имя_фс, const char* имя_файла, const char* содержимое);
+char* add_file(const char* main_filename);
 
 // Изменяет существующий файл
-int изменить_файл(const char* имя_фс, const char* имя_файла, const char* новое_содержимое);
+char* modify_file(const char* filename);;
 
 #endif
